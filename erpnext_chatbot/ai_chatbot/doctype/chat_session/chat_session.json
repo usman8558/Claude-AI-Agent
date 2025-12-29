@@ -1,0 +1,112 @@
+{
+  "name": "Chat Session",
+  "module": "AI Chatbot",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "is_submittable": 0,
+  "track_changes": 1,
+  "autoname": "field:session_id",
+  "naming_rule": "By fieldname",
+  "fields": [
+    {
+      "fieldname": "session_id",
+      "label": "Session ID",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1,
+      "read_only": 1,
+      "in_list_view": 1,
+      "description": "UUID identifying this chat session"
+    },
+    {
+      "fieldname": "user",
+      "label": "User",
+      "fieldtype": "Link",
+      "options": "User",
+      "reqd": 1,
+      "read_only": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "description": "ERPNext user who owns this session"
+    },
+    {
+      "fieldname": "status",
+      "label": "Status",
+      "fieldtype": "Select",
+      "options": "Active\nClosed\nExpired",
+      "default": "Active",
+      "reqd": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "description": "Session lifecycle status"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "created_at",
+      "label": "Created At",
+      "fieldtype": "Datetime",
+      "reqd": 1,
+      "read_only": 1,
+      "in_list_view": 1,
+      "description": "Session creation timestamp"
+    },
+    {
+      "fieldname": "last_activity",
+      "label": "Last Activity",
+      "fieldtype": "Datetime",
+      "reqd": 1,
+      "description": "Timestamp of last message in session"
+    },
+    {
+      "fieldname": "company_context",
+      "label": "Company Context",
+      "fieldtype": "Link",
+      "options": "Company",
+      "description": "Default company for ERP queries in this session"
+    },
+    {
+      "fieldname": "section_break_stats",
+      "label": "Statistics",
+      "fieldtype": "Section Break"
+    },
+    {
+      "fieldname": "message_count",
+      "label": "Message Count",
+      "fieldtype": "Int",
+      "default": 0,
+      "read_only": 1,
+      "description": "Total messages in this session"
+    },
+    {
+      "fieldname": "total_tokens",
+      "label": "Total Tokens",
+      "fieldtype": "Int",
+      "default": 0,
+      "read_only": 1,
+      "description": "Cumulative token usage for this session"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1
+    },
+    {
+      "role": "All",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "if_owner": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "index_web_pages_for_search": 0
+}
