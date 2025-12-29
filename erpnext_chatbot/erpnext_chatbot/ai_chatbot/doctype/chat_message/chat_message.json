@@ -1,0 +1,101 @@
+{
+  "name": "Chat Message",
+  "module": "AI Chatbot",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "is_submittable": 0,
+  "track_changes": 0,
+  "autoname": "hash",
+  "naming_rule": "Random",
+  "fields": [
+    {
+      "fieldname": "session_id",
+      "label": "Session ID",
+      "fieldtype": "Link",
+      "options": "Chat Session",
+      "reqd": 1,
+      "read_only": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "description": "Parent chat session"
+    },
+    {
+      "fieldname": "role",
+      "label": "Role",
+      "fieldtype": "Select",
+      "options": "user\nassistant\nsystem",
+      "reqd": 1,
+      "read_only": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "description": "Message sender role"
+    },
+    {
+      "fieldname": "content",
+      "label": "Content",
+      "fieldtype": "Long Text",
+      "reqd": 1,
+      "read_only": 1,
+      "description": "Message text content"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "timestamp",
+      "label": "Timestamp",
+      "fieldtype": "Datetime",
+      "reqd": 1,
+      "read_only": 1,
+      "in_list_view": 1,
+      "description": "Message creation time"
+    },
+    {
+      "fieldname": "token_count",
+      "label": "Token Count",
+      "fieldtype": "Int",
+      "default": 0,
+      "read_only": 1,
+      "description": "Tokens consumed by this message"
+    },
+    {
+      "fieldname": "section_break_meta",
+      "label": "Metadata",
+      "fieldtype": "Section Break",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "model_used",
+      "label": "Model Used",
+      "fieldtype": "Data",
+      "read_only": 1,
+      "description": "AI model name (e.g., 'gemini-2.5-flash')"
+    },
+    {
+      "fieldname": "processing_time_ms",
+      "label": "Processing Time (ms)",
+      "fieldtype": "Int",
+      "read_only": 1,
+      "description": "Time taken to generate response"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1
+    },
+    {
+      "role": "All",
+      "read": 1,
+      "create": 1,
+      "if_owner": 1
+    }
+  ],
+  "sort_field": "timestamp",
+  "sort_order": "ASC",
+  "index_web_pages_for_search": 0
+}

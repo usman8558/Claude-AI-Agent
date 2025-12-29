@@ -1,0 +1,132 @@
+{
+  "name": "Chat Audit Log",
+  "module": "AI Chatbot",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "is_submittable": 0,
+  "track_changes": 0,
+  "autoname": "hash",
+  "naming_rule": "Random",
+  "fields": [
+    {
+      "fieldname": "session_id",
+      "label": "Session ID",
+      "fieldtype": "Link",
+      "options": "Chat Session",
+      "reqd": 1,
+      "read_only": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "description": "Associated chat session"
+    },
+    {
+      "fieldname": "user",
+      "label": "User",
+      "fieldtype": "Link",
+      "options": "User",
+      "reqd": 1,
+      "read_only": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "description": "User who made the query"
+    },
+    {
+      "fieldname": "timestamp",
+      "label": "Timestamp",
+      "fieldtype": "Datetime",
+      "reqd": 1,
+      "read_only": 1,
+      "in_list_view": 1,
+      "description": "When the query was processed"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "permission_checks_passed",
+      "label": "Permission Checks Passed",
+      "fieldtype": "Check",
+      "default": 0,
+      "read_only": 1,
+      "in_list_view": 1,
+      "description": "Whether all permission validations succeeded"
+    },
+    {
+      "fieldname": "error_occurred",
+      "label": "Error Occurred",
+      "fieldtype": "Check",
+      "default": 0,
+      "read_only": 1,
+      "in_list_view": 1,
+      "description": "Whether query processing failed"
+    },
+    {
+      "fieldname": "tools_called",
+      "label": "Tools Called",
+      "fieldtype": "Int",
+      "default": 0,
+      "read_only": 1,
+      "description": "Number of tool invocations"
+    },
+    {
+      "fieldname": "total_processing_time_ms",
+      "label": "Total Processing Time (ms)",
+      "fieldtype": "Int",
+      "read_only": 1,
+      "description": "End-to-end query processing time"
+    },
+    {
+      "fieldname": "section_break_query",
+      "label": "Query Details",
+      "fieldtype": "Section Break"
+    },
+    {
+      "fieldname": "query_text",
+      "label": "Query Text",
+      "fieldtype": "Long Text",
+      "reqd": 1,
+      "read_only": 1,
+      "description": "User's original question"
+    },
+    {
+      "fieldname": "response_summary",
+      "label": "Response Summary",
+      "fieldtype": "Text",
+      "read_only": 1,
+      "description": "First 500 chars of AI response"
+    },
+    {
+      "fieldname": "section_break_data",
+      "label": "Data Access",
+      "fieldtype": "Section Break",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "data_accessed",
+      "label": "Data Accessed",
+      "fieldtype": "JSON",
+      "read_only": 1,
+      "description": "List of DocTypes/reports accessed"
+    },
+    {
+      "fieldname": "error_message",
+      "label": "Error Message",
+      "fieldtype": "Text",
+      "read_only": 1,
+      "description": "Error details if query failed"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 0,
+      "create": 1,
+      "delete": 0
+    }
+  ],
+  "sort_field": "timestamp",
+  "sort_order": "DESC",
+  "index_web_pages_for_search": 0
+}

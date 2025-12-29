@@ -1,0 +1,120 @@
+{
+  "name": "AI Tool Call Log",
+  "module": "AI Chatbot",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "is_submittable": 0,
+  "track_changes": 0,
+  "autoname": "hash",
+  "naming_rule": "Random",
+  "fields": [
+    {
+      "fieldname": "session_id",
+      "label": "Session ID",
+      "fieldtype": "Link",
+      "options": "Chat Session",
+      "reqd": 1,
+      "read_only": 1,
+      "in_standard_filter": 1,
+      "description": "Associated chat session"
+    },
+    {
+      "fieldname": "audit_log_id",
+      "label": "Audit Log ID",
+      "fieldtype": "Link",
+      "options": "Chat Audit Log",
+      "reqd": 1,
+      "read_only": 1,
+      "description": "Parent audit log entry"
+    },
+    {
+      "fieldname": "tool_name",
+      "label": "Tool Name",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "read_only": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "description": "Name of the tool called"
+    },
+    {
+      "fieldname": "column_break_1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "execution_start",
+      "label": "Execution Start",
+      "fieldtype": "Datetime",
+      "reqd": 1,
+      "read_only": 1,
+      "in_list_view": 1,
+      "description": "Tool invocation timestamp"
+    },
+    {
+      "fieldname": "execution_time_ms",
+      "label": "Execution Time (ms)",
+      "fieldtype": "Int",
+      "read_only": 1,
+      "in_list_view": 1,
+      "description": "Tool execution duration"
+    },
+    {
+      "fieldname": "result_status",
+      "label": "Result Status",
+      "fieldtype": "Select",
+      "options": "success\nerror\npermission_denied",
+      "reqd": 1,
+      "read_only": 1,
+      "in_list_view": 1,
+      "in_standard_filter": 1,
+      "description": "Tool execution outcome"
+    },
+    {
+      "fieldname": "records_returned",
+      "label": "Records Returned",
+      "fieldtype": "Int",
+      "default": 0,
+      "read_only": 1,
+      "description": "Number of records returned by tool"
+    },
+    {
+      "fieldname": "section_break_params",
+      "label": "Parameters & Results",
+      "fieldtype": "Section Break",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "parameters",
+      "label": "Parameters",
+      "fieldtype": "JSON",
+      "read_only": 1,
+      "description": "Tool input parameters as JSON"
+    },
+    {
+      "fieldname": "result_summary",
+      "label": "Result Summary",
+      "fieldtype": "Text",
+      "read_only": 1,
+      "description": "Summary of tool output (first 1000 chars)"
+    },
+    {
+      "fieldname": "error_details",
+      "label": "Error Details",
+      "fieldtype": "Text",
+      "read_only": 1,
+      "description": "Error message if status=error"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 0,
+      "create": 1,
+      "delete": 0
+    }
+  ],
+  "sort_field": "execution_start",
+  "sort_order": "DESC",
+  "index_web_pages_for_search": 0
+}
