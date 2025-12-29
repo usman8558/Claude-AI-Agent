@@ -61,7 +61,7 @@ class ERPNextChatbot {
     async load_sessions() {
         try {
             const response = await frappe.call({
-                method: 'erpnext_chatbot.erpnext_chatbot.api.chat.get_sessions',
+                method: 'erpnext_chatbot.api.chat.get_sessions',
                 args: { status: 'Active', limit: 20 }
             });
 
@@ -110,7 +110,7 @@ class ERPNextChatbot {
     async create_session() {
         try {
             const response = await frappe.call({
-                method: 'erpnext_chatbot.erpnext_chatbot.api.chat.create_session'
+                method: 'erpnext_chatbot.api.chat.create_session'
             });
 
             if (response.message && response.message.success) {
@@ -149,7 +149,7 @@ class ERPNextChatbot {
 
         try {
             const response = await frappe.call({
-                method: 'erpnext_chatbot.erpnext_chatbot.api.chat.get_session_history',
+                method: 'erpnext_chatbot.api.chat.get_session_history',
                 args: { session_id: this.session_id, limit: 50 }
             });
 
@@ -201,7 +201,7 @@ class ERPNextChatbot {
 
         try {
             const response = await frappe.call({
-                method: 'erpnext_chatbot.erpnext_chatbot.api.chat.send_message',
+                method: 'erpnext_chatbot.api.chat.send_message',
                 args: {
                     session_id: this.session_id,
                     message: message
@@ -358,7 +358,7 @@ class ERPNextChatbot {
 
         try {
             const response = await frappe.call({
-                method: 'erpnext_chatbot.erpnext_chatbot.api.chat.get_new_messages',
+                method: 'erpnext_chatbot.api.chat.get_new_messages',
                 args: {
                     session_id: this.session_id,
                     after_timestamp: this.last_message_time
@@ -389,7 +389,7 @@ class ERPNextChatbot {
             async () => {
                 try {
                     const response = await frappe.call({
-                        method: 'erpnext_chatbot.erpnext_chatbot.api.chat.close_session',
+                        method: 'erpnext_chatbot.api.chat.close_session',
                         args: { session_id: this.session_id }
                     });
 
@@ -412,7 +412,7 @@ class ERPNextChatbot {
     async update_rate_limit() {
         try {
             const response = await frappe.call({
-                method: 'erpnext_chatbot.erpnext_chatbot.api.chat.get_rate_limit_status'
+                method: 'erpnext_chatbot.api.chat.get_rate_limit_status'
             });
 
             if (response.message && response.message.success) {
