@@ -1,0 +1,76 @@
+<div class="chatbot-container">
+    <!-- Session Sidebar -->
+    <div class="chatbot-sidebar">
+        <div class="sidebar-header">
+            <h4>Chat Sessions</h4>
+            <button class="btn btn-primary btn-sm" id="new-session-btn">
+                <i class="fa fa-plus"></i> New Chat
+            </button>
+        </div>
+        <div class="session-list" id="session-list">
+            <!-- Sessions loaded dynamically -->
+        </div>
+    </div>
+
+    <!-- Main Chat Area -->
+    <div class="chatbot-main">
+        <!-- Chat Header -->
+        <div class="chat-header">
+            <div class="chat-title">
+                <i class="fa fa-robot"></i>
+                <span id="chat-title-text">AI Assistant</span>
+            </div>
+            <div class="chat-actions">
+                <button class="btn btn-default btn-sm" id="close-session-btn" title="Close Session">
+                    <i class="fa fa-times-circle"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Messages Area -->
+        <div class="chat-messages" id="chat-messages">
+            <div class="welcome-message" id="welcome-message">
+                <div class="welcome-icon">
+                    <i class="fa fa-comments fa-3x"></i>
+                </div>
+                <h3>Welcome to ERPNext AI Assistant</h3>
+                <p>I can help you query financial and business data using natural language.</p>
+                <div class="example-queries">
+                    <p><strong>Try asking:</strong></p>
+                    <ul>
+                        <li>"What was our revenue last month?"</li>
+                        <li>"Show me the profit and loss for Q4 2024"</li>
+                        <li>"Who are our top customers this year?"</li>
+                        <li>"What reports are available?"</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chat-input-area">
+            <div class="input-wrapper">
+                <textarea
+                    id="message-input"
+                    placeholder="Type your question here..."
+                    rows="1"
+                    disabled
+                ></textarea>
+                <button class="btn btn-primary" id="send-btn" disabled>
+                    <i class="fa fa-paper-plane"></i>
+                </button>
+            </div>
+            <div class="input-hint">
+                <span id="rate-limit-status"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loading-overlay" style="display: none;">
+    <div class="loading-spinner">
+        <i class="fa fa-spinner fa-spin fa-2x"></i>
+        <p>Processing your request...</p>
+    </div>
+</div>
