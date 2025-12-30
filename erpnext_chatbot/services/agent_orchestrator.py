@@ -6,6 +6,7 @@ Handles tool registration, message processing, and response generation.
 """
 
 import json
+import re
 import time
 import frappe
 from frappe import _
@@ -41,7 +42,49 @@ Available capabilities:
 - Execute standard ERPNext reports
 - List available reports
 
-When users ask questions like "What's our revenue?", always ask for clarification on the time period if not specified."""
+When users ask questions like "What's our revenue?", always ask for clarification on the time period if not specified.
+
+CHART VISUALIZATIONS:
+When appropriate, you can enhance your responses with chart visualizations. Use charts when:
+- User asks for trends over time (e.g., "monthly sales trend") → LINE chart
+- User asks for rankings or comparisons (e.g., "top 5 customers") → BAR chart
+- User asks for distribution or breakdown (e.g., "expense distribution") → PIE chart
+
+When including a chart, format your response as follows:
+- Provide your natural language explanation first
+- Include chart data in JSON format at the end of your response like this:
+
+{CHART_DATA}
+{
+  "chart_type": "line|bar|pie",
+  "title": "Chart Title",
+  "labels": ["Label1", "Label2", "Label3"],
+  "values": [100, 200, 300],
+  "x_axis_label": "X Axis Label (optional)",
+  "y_axis_label": "Y Axis Label (optional)"
+}
+{/CHART_DATA}
+
+Example response with chart:
+"The sales have shown steady growth over the past 6 months, increasing from $120,000 in January to $195,000 in June."
+
+{CHART_DATA}
+{
+  "chart_type": "line",
+  "title": "Monthly Sales Trend",
+  "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+  "values": [120000, 135000, 150000, 165000, 180000, 195000],
+  "x_axis_label": "Month",
+  "y_axis_label": "Revenue ($)"
+}
+{/CHART_DATA}
+
+Chart guidelines:
+- Use 2-10 data points for optimal visualization
+- Keep labels short and readable
+- Use consistent formatting for values (e.g., currency symbols)
+- Only include charts when data has at least 2 data points
+- Match chart type to the query: line for trends, bar for comparisons, pie for distributions"""
 
 
 def get_ai_client() -> OpenAI:
@@ -224,9 +267,16 @@ def process_message(
             total_processing_time_ms=processing_time_ms
         )
 
+        # Parse chart data from response if present
+        chart_data = _parse_chart_from_response(response_text)
+
+        # Clean chart markers from display text
+        clean_text = _clean_chart_markers(response_text)
+
         return {
             "success": True,
-            "response": response_text,
+            "response": clean_text,
+            "chart": chart_data,
             "processing_time_ms": processing_time_ms,
             "tools_called": tools_called,
             "token_count": total_tokens
@@ -364,3 +414,58 @@ def _get_user_friendly_error(error: Exception) -> str:
         return "You don't have permission to access the requested data."
     else:
         return "An error occurred while processing your request. Please try again or rephrase your question."
+
+
+def _parse_chart_from_response(text: str) -> Optional[Dict[str, Any]]:
+    """
+    Parse chart data from response text.
+
+    Args:
+        text: Response text that may contain chart data
+
+    Returns:
+        Chart data dictionary or None
+    """
+    if not text:
+        return None
+
+    # Look for {CHART_DATA}...{/CHART_DATA} pattern
+    pattern = r'\{CHART_DATA\}\s*(\{[\s\S]*?\})\s*\{/CHART_DATA\}'
+    match = re.search(pattern, text)
+
+    if match:
+        try:
+            chart_data = json.loads(match.group(1))
+
+            # Validate required fields
+            if 'chart_type' in chart_data and 'labels' in chart_data and 'values' in chart_data:
+                # Ensure chart_type is valid
+                if chart_data['chart_type'] in ['bar', 'line', 'pie']:
+                    return chart_data
+        except (json.JSONDecodeError, KeyError, TypeError):
+            pass
+
+    return None
+
+
+def _clean_chart_markers(text: str) -> str:
+    """
+    Remove chart markers from text for display.
+
+    Args:
+        text: Original response text
+
+    Returns:
+        Clean text without chart markers
+    """
+    if not text:
+        return text
+
+    # Remove {CHART_DATA}...{/CHART_DATA} blocks
+    pattern = r'\{CHART_DATA\}[\s\S]*?\{/CHART_DATA\}\s*'
+    clean_text = re.sub(pattern, '', text)
+
+    # Clean up any leftover whitespace
+    clean_text = clean_text.strip()
+
+    return clean_text

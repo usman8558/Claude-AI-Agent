@@ -226,3 +226,295 @@ def summarize_for_context(
         return text
 
     return text[:max_length - 50] + "\n\n[... truncated for brevity]"
+
+
+# =============================================================================
+# Chart Formatting Functions
+# =============================================================================
+
+def format_report_for_chart(
+    result: Dict[str, Any],
+    label_column: str = None,
+    value_column: str = None,
+    max_points: int = 50
+) -> Dict[str, Any]:
+    """
+    Format ERPNext report result for chart rendering.
+
+    Args:
+        result: Report result from frappe.desk.query_report.run()
+        label_column: Column name for chart labels (auto-detected if None)
+        value_column: Column name for chart values (auto-detected if None)
+        max_points: Maximum number of data points
+
+    Returns:
+        Dictionary with labels and values arrays, or empty dict if insufficient data
+    """
+    if not result:
+        return {}
+
+    columns = result.get("columns", [])
+    data = result.get("result", []) or result.get("data", [])
+
+    if not data or len(data) < 2:
+        return {}
+
+    # Auto-detect columns if not specified
+    if not label_column or not value_column:
+        detected = _detect_chart_columns(columns, data)
+        if not label_column:
+            label_column = detected['label']
+        if not value_column:
+            value_column = detected['value']
+
+    labels = []
+    values = []
+
+    for row in data:
+        if isinstance(row, dict):
+            label = row.get(label_column)
+            value = row.get(value_column)
+        elif isinstance(row, (list, tuple)):
+            label = _get_column_value(columns, label_column, row)
+            value = _get_column_value(columns, value_column, row)
+        else:
+            continue
+
+        if label is not None and value is not None:
+            try:
+                labels.append(str(label))
+                values.append(float(value))
+            except (ValueError, TypeError):
+                continue
+
+        if len(labels) >= max_points:
+            break
+
+    if len(labels) < 2:
+        return {}
+
+    return {
+        "labels": labels,
+        "values": values
+    }
+
+
+def extract_chart_labels_values(
+    data: List[Dict[str, Any]],
+    label_field: str,
+    value_field: str,
+    max_points: int = 50
+) -> Dict[str, Any]:
+    """
+    Extract labels and values from a list of dictionaries.
+
+    Args:
+        data: List of dictionaries
+        label_field: Field name for labels
+        value_field: Field name for values
+        max_points: Maximum number of points
+
+    Returns:
+        Dictionary with labels and values arrays
+    """
+    labels = []
+    values = []
+
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+
+        label = item.get(label_field)
+        value = item.get(value_field)
+
+        if label is not None and value is not None:
+            try:
+                labels.append(str(label))
+                values.append(float(value))
+            except (ValueError, TypeError):
+                continue
+
+        if len(labels) >= max_points:
+            break
+
+    return {
+        "labels": labels,
+        "values": values,
+        "count": len(labels)
+    }
+
+
+def detect_chart_type(query: str) -> str:
+    """
+    Detect appropriate chart type based on user query.
+
+    Args:
+        query: User's natural language query
+
+    Returns:
+        Chart type: 'bar', 'line', or 'pie'
+    """
+    query_lower = query.lower()
+
+    # Chart type keywords
+    line_keywords = ['trend', 'over time', 'growth', 'progress', 'evolution',
+                     'history', 'months', 'years', 'quarterly', 'over the past']
+    bar_keywords = ['top', 'comparison', 'ranking', 'by category', 'by department',
+                    'by customer', 'by product', 'list', 'show me']
+    pie_keywords = ['distribution', 'breakdown', 'share', 'percentage',
+                    'proportion', 'composition', 'among']
+
+    # Count matches
+    line_score = sum(1 for kw in line_keywords if kw in query_lower)
+    bar_score = sum(1 for kw in bar_keywords if kw in query_lower)
+    pie_score = sum(1 for kw in pie_keywords if kw in query_lower)
+
+    # Explicit chart type mentions
+    if 'pie chart' in query_lower or 'donut chart' in query_lower:
+        return 'pie'
+    if 'bar chart' in query_lower:
+        return 'bar'
+    if 'line chart' in query_lower or 'trend' in query_lower:
+        return 'line'
+
+    # Default logic
+    if bar_score >= line_score and bar_score >= pie_score:
+        return 'bar'
+    elif line_score > bar_score and line_score >= pie_score:
+        return 'line'
+    else:
+        return 'pie'
+
+
+def build_chart_metadata(
+    chart_type: str,
+    title: str,
+    labels: List[str],
+    values: List[float],
+    x_axis_label: str = None,
+    y_axis_label: str = None,
+    colors: List[str] = None
+) -> Dict[str, Any]:
+    """
+    Build complete chart metadata dictionary.
+
+    Args:
+        chart_type: Type of chart (bar, line, pie)
+        title: Chart title
+        labels: Array of labels
+        values: Array of values
+        x_axis_label: Optional X-axis label
+        y_axis_label: Optional Y-axis label
+        colors: Optional array of hex colors
+
+    Returns:
+        Chart metadata dictionary
+    """
+    default_colors = [
+        '#2491eb', '#5e64ff', '#00c3b3', '#28c76f', '#ff6b6b',
+        '#f9c846', '#743ee2', '#ea5455', '#a5a5a5', '#1a1a2e'
+    ]
+
+    return {
+        "chart_type": chart_type,
+        "title": title,
+        "labels": labels,
+        "values": values,
+        "x_axis_label": x_axis_label,
+        "y_axis_label": y_axis_label,
+        "colors": colors or default_colors[:len(values)]
+    }
+
+
+def _detect_chart_columns(
+    columns: List[Any],
+    data: List[Any]
+) -> Dict[str, str]:
+    """
+    Automatically detect label and value columns for charts.
+
+    Args:
+        columns: Column definitions
+        data: Report data rows
+
+    Returns:
+        Dictionary with 'label' and 'value' column names
+    """
+    if not columns or not data:
+        return {"label": None, "value": None}
+
+    # Get first data row
+    first_row = data[0]
+    if not isinstance(first_row, dict):
+        return {"label": None, "value": None}
+
+    data_keys = list(first_row.keys())
+
+    # Find likely value column (numeric)
+    value_column = None
+    label_column = None
+
+    # Common value column names
+    value_names = ['amount', 'total', 'revenue', 'sales', 'grand_total', 'value',
+                   'quantity', 'count', 'percentage', 'balance', 'debit', 'credit']
+
+    for key in data_keys:
+        key_lower = key.lower()
+        if any(vn in key_lower for vn in value_names):
+            # Check if numeric
+            try:
+                if first_row[key] is not None and float(first_row[key]) != float('nan'):
+                    value_column = key
+                    break
+            except (ValueError, TypeError):
+                continue
+
+    # If no value column found, use last numeric column
+    if not value_column:
+        for key in reversed(data_keys):
+            try:
+                if first_row[key] is not None:
+                    float(first_row[key])
+                    value_column = key
+                    break
+            except (ValueError, TypeError):
+                continue
+
+    # Find likely label column (non-numeric, used for grouping)
+    label_names = ['name', 'customer', 'item', 'product', 'category', 'department',
+                   'account', 'date', 'month', 'year', 'party', 'warehouse']
+
+    for key in data_keys:
+        if key == value_column:
+            continue
+        key_lower = key.lower()
+        if any(ln in key_lower for ln in label_names):
+            label_column = key
+            break
+
+    # If no label column found, use first non-value column
+    if not label_column:
+        for key in data_keys:
+            if key != value_column:
+                label_column = key
+                break
+
+    return {"label": label_column, "value": value_column}
+
+
+def _get_column_value(
+    columns: List[Any],
+    column_name: str,
+    row: tuple
+) -> Any:
+    """Get column value from row by column name."""
+    for i, col in enumerate(columns):
+        if isinstance(col, dict):
+            fieldname = col.get('fieldname', col.get('label'))
+        else:
+            fieldname = str(col)
+
+        if fieldname == column_name and i < len(row):
+            return row[i]
+
+    return None

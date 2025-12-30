@@ -74,3 +74,71 @@
         <p>Processing your request...</p>
     </div>
 </div>
+
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<!-- Chart Styles -->
+<style>
+/* Chart Container */
+.chart-container {
+    margin-top: 15px;
+    margin-bottom: 15px;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+}
+
+.chart-container canvas {
+    max-height: 300px;
+}
+
+.chart-title {
+    font-weight: 600;
+    color: #2e2e2e;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+/* Loading State */
+.chart-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: #8f99a3;
+}
+
+.chart-loading i {
+    margin-right: 8px;
+}
+
+/* Error State */
+.chart-error {
+    padding: 15px;
+    color: #ea5455;
+    font-size: 13px;
+    text-align: center;
+    background: #fff5f5;
+    border: 1px solid #ffcdd2;
+    border-radius: 4px;
+}
+
+/* Message-specific chart styling */
+.chat-message .chart-container {
+    margin-top: 10px;
+    margin-bottom: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .chart-container {
+        padding: 10px;
+    }
+
+    .chart-container canvas {
+        max-height: 250px;
+    }
+}
+</style>

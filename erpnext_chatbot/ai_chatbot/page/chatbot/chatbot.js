@@ -16,6 +16,7 @@ class ERPNextChatbot {
         this.poll_interval = null;
         this.last_message_time = null;
         this.is_waiting_response = false;
+        this.charts = {}; // Track chart instances by message ID
 
         this.init();
     }
@@ -176,6 +177,35 @@ class ERPNextChatbot {
         }
     }
 
+    async poll_new_messages() {
+        // Only poll if waiting for response
+        if (!this.last_message_time) return;
+
+        try {
+            const response = await frappe.call({
+                method: 'erpnext_chatbot.api.chat.get_new_messages',
+                args: {
+                    session_id: this.session_id,
+                    after_timestamp: this.last_message_time
+                }
+            });
+
+            if (response.message && response.message.success) {
+                const messages = response.message.message.messages;
+                messages.forEach(msg => {
+                    this.append_message(msg.role, msg.content, msg.timestamp);
+                    this.last_message_time = msg.timestamp;
+                });
+
+                if (messages.length > 0) {
+                    this.scroll_to_bottom();
+                }
+            }
+        } catch (error) {
+            console.error('Polling error:', error);
+        }
+    }
+
     async send_message() {
         const $input = $('#message-input');
         const message = $input.val().trim();
@@ -213,7 +243,8 @@ class ERPNextChatbot {
 
             if (response.message && response.message.success) {
                 const result = response.message.message;
-                this.append_message('assistant', result.response);
+                const chartData = result.chart || null;
+                this.append_message('assistant', result.response, chartData);
                 this.scroll_to_bottom();
 
                 // Update rate limit display
@@ -231,9 +262,10 @@ class ERPNextChatbot {
         }
     }
 
-    append_message(role, content, timestamp = null) {
+    append_message(role, content, timestamp = null, chartData = null) {
         const $container = $('#chat-messages');
         const time = timestamp ? frappe.datetime.prettyDate(timestamp) : 'Just now';
+        const messageId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 
         const roleClass = role === 'user' ? 'user-message' : (role === 'assistant' ? 'assistant-message' : 'system-message');
         const roleLabel = role === 'user' ? 'You' : (role === 'assistant' ? 'AI Assistant' : 'System');
@@ -242,17 +274,186 @@ class ERPNextChatbot {
         let formatted_content = frappe.utils.escape_html(content);
         formatted_content = this.format_message(formatted_content);
 
+        // Create message HTML
         const $message = $(`
-            <div class="chat-message ${roleClass}">
+            <div class="chat-message ${roleClass}" id="${messageId}">
                 <div class="message-header">
                     <span class="message-role">${roleLabel}</span>
                     <span class="message-time">${time}</span>
                 </div>
                 <div class="message-content">${formatted_content}</div>
+                <div class="chart-container" id="${messageId}-chart" style="display: none;"></div>
             </div>
         `);
 
         $container.append($message);
+
+        // Render chart if data is provided
+        if (chartData && this.isValidChartData(chartData)) {
+            this.render_chart(messageId, chartData);
+        }
+    }
+
+    isValidChartData(chartData) {
+        return (
+            chartData &&
+            chartData.chart_type &&
+            ['bar', 'line', 'pie'].includes(chartData.chart_type) &&
+            Array.isArray(chartData.labels) &&
+            Array.isArray(chartData.values) &&
+            chartData.labels.length >= 2 &&
+            chartData.values.length >= 2
+        );
+    }
+
+    render_chart(messageId, chartData) {
+        const $chartContainer = $('#' + messageId + '-chart');
+
+        if (!$chartContainer.length) {
+            console.warn('Chart container not found:', messageId);
+            return;
+        }
+
+        // Show chart container
+        $chartContainer.show();
+
+        // Add title if provided
+        if (chartData.title) {
+            $chartContainer.append('<div class="chart-title">' + frappe.utils.escape_html(chartData.title) + '</div>');
+        }
+
+        // Create canvas element
+        const canvasId = messageId + '-canvas';
+        $chartContainer.append('<canvas id="' + canvasId + '"></canvas>');
+
+        // Wait for Chart.js to be available
+        if (typeof Chart === 'undefined') {
+            $chartContainer.html('<div class="chart-error">Chart library not loaded. Please refresh the page.</div>');
+            return;
+        }
+
+        // Get chart configuration
+        const config = this.get_chart_config(chartData);
+
+        // Create chart instance
+        try {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            this.charts[messageId] = new Chart(ctx, config);
+        } catch (error) {
+            console.error('Error rendering chart:', error);
+            $chartContainer.html('<div class="chart-error">Failed to render chart.</div>');
+        }
+    }
+
+    get_chart_config(chartData) {
+        const chartType = chartData.chart_type;
+        const labels = chartData.labels;
+        const values = chartData.values;
+        const colors = chartData.colors || [
+            '#2491eb', '#5e64ff', '#00c3b3', '#28c76f', '#ff6b6b',
+            '#f9c846', '#743ee2', '#ea5455', '#a5a5a5', '#1a1a2e'
+        ];
+
+        const config = {
+            type: chartType,
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: chartData.title || 'Value',
+                    data: values,
+                    backgroundColor: chartType === 'pie' ? colors : colors[0],
+                    borderColor: chartType === 'line' ? colors[0] : '#fff',
+                    borderWidth: 2,
+                    fill: chartType === 'line',
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: chartType === 'pie',
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null || context.parsed !== null) {
+                                    // Format as currency if values are large
+                                    const val = context.parsed;
+                                    if (val > 1000) {
+                                        label += '$' + val.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                                    } else {
+                                        label += val.toLocaleString();
+                                    }
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 500
+                }
+            }
+        };
+
+        // Add scales for bar and line charts
+        if (chartType === 'bar' || chartType === 'line') {
+            config.options.scales = {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#f0f0f0'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            if (value >= 1000000) {
+                                return '$' + (value / 1000000).toFixed(1) + 'M';
+                            } else if (value >= 1000) {
+                                return '$' + (value / 1000).toFixed(0) + 'K';
+                            }
+                            return value;
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            };
+        }
+
+        // For pie charts, show percentages
+        if (chartType === 'pie') {
+            const total = values.reduce((a, b) => a + b, 0);
+            config.options.plugins.tooltip.callbackes = {
+                label: function(context) {
+                    const value = context.parsed;
+                    const percentage = ((value / total) * 100).toFixed(1);
+                    return context.label + ': ' + percentage + '% (' + value.toLocaleString() + ')';
+                }
+            };
+        }
+
+        return config;
+    }
+
+    destroy_chart(messageId) {
+        if (this.charts[messageId]) {
+            try {
+                this.charts[messageId].destroy();
+            } catch (error) {
+                console.warn('Error destroying chart:', error);
+            }
+            delete this.charts[messageId];
+        }
     }
 
     format_message(text) {
@@ -349,35 +550,6 @@ class ERPNextChatbot {
         if (this.poll_interval) {
             clearInterval(this.poll_interval);
             this.poll_interval = null;
-        }
-    }
-
-    async poll_new_messages() {
-        // Only poll if waiting for response
-        if (!this.last_message_time) return;
-
-        try {
-            const response = await frappe.call({
-                method: 'erpnext_chatbot.api.chat.get_new_messages',
-                args: {
-                    session_id: this.session_id,
-                    after_timestamp: this.last_message_time
-                }
-            });
-
-            if (response.message && response.message.success) {
-                const messages = response.message.message.messages;
-                messages.forEach(msg => {
-                    this.append_message(msg.role, msg.content, msg.timestamp);
-                    this.last_message_time = msg.timestamp;
-                });
-
-                if (messages.length > 0) {
-                    this.scroll_to_bottom();
-                }
-            }
-        } catch (error) {
-            console.error('Polling error:', error);
         }
     }
 
